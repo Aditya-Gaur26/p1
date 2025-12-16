@@ -33,11 +33,19 @@ class Config:
         # Model settings
         self.base_model_name = os.getenv("BASE_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct")
         self.embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+        self.embedding_model_upgraded = os.getenv("EMBEDDING_MODEL_UPGRADED", "sentence-transformers/all-mpnet-base-v2")
         
         # Feature flags
         self.enable_youtube = os.getenv("ENABLE_YOUTUBE_SUGGESTIONS", "true").lower() == "true"
         self.enable_papers = os.getenv("ENABLE_PAPER_SEARCH", "true").lower() == "true"
         self.enable_concepts = os.getenv("ENABLE_CONCEPT_MAPPING", "true").lower() == "true"
+        
+        # Enhanced RAG settings
+        self.use_hybrid_retrieval = os.getenv("USE_HYBRID_RETRIEVAL", "true").lower() == "true"
+        self.use_reranking = os.getenv("USE_RERANKING", "true").lower() == "true"
+        self.use_query_expansion = os.getenv("USE_QUERY_EXPANSION", "true").lower() == "true"
+        self.enable_cache = os.getenv("ENABLE_CACHE", "true").lower() == "true"
+        self.cache_size = int(os.getenv("CACHE_SIZE", "100"))
         
         # Load YAML configs
         self.training_config = self._load_yaml("training_config.yaml")

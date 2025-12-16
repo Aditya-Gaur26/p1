@@ -1,5 +1,5 @@
 """
-Extract text from PowerPoint slides
+Extract text from PowerPoint slides with enhanced preprocessing
 """
 
 import os
@@ -11,33 +11,44 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.utils.config import config
 from src.utils.helpers import save_json, clean_text
+from src.utils.text_preprocessing import AdvancedTextCleaner, clean_slide_text
 
 
 def extract_text_from_slide(slide) -> str:
-    """Extract text from a single slide"""
+    """Extract text from a single slide with enhanced cleaning"""
     text_parts = []
     
     for shape in slide.shapes:
         if hasattr(shape, "text"):
             text = shape.text.strip()
             if text:
-                text_parts.append(text)
+                # Apply slide-specific cleaning
+                text = clean_slide_text(text)
+                if text:  # Only add non-empty after cleaning
+                    text_parts.append(text)
     
     return "\n".join(text_parts)
 
 
 def extract_from_pptx(filepath: Path) -> Dict:
-    """Extract content from PowerPoint file"""
+    """Extract content from PowerPoint file with structure detection"""
     try:
         prs = Presentation(filepath)
+        cleaner = AdvancedTextCleaner()
         
         slides_content = []
         for i, slide in enumerate(prs.slides, 1):
             slide_text = extract_text_from_slide(slide)
             if slide_text:
+                # Extract structured content from slide
+                structured = cleaner.extract_structured_content(slide_text)
+                
                 slides_content.append({
                     "slide_number": i,
-                    "content": clean_text(slide_text)
+                    "content": slide_text,
+                    "has_bullets": len(structured.get('bullet_points', [])) > 0,
+                    "has_code": cleaner.is_code_block(slide_text),
+                    "headers": structured.get('headers', [])
                 })
         
         return {

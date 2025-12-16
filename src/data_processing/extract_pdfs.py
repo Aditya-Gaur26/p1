@@ -1,5 +1,5 @@
 """
-Extract text from PDF files (books and documents)
+Extract text from PDF files (books and documents) with enhanced preprocessing
 """
 
 import sys
@@ -11,6 +11,7 @@ import pdfplumber
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.utils.config import config
 from src.utils.helpers import save_json, clean_text, chunk_text
+from src.utils.text_preprocessing import AdvancedTextCleaner, clean_pdf_text
 
 
 def extract_with_pypdf2(filepath: Path) -> str:
@@ -45,7 +46,7 @@ def extract_with_pdfplumber(filepath: Path) -> str:
 
 
 def extract_from_pdf(filepath: Path) -> Dict:
-    """Extract content from PDF file"""
+    """Extract content from PDF file with enhanced cleaning"""
     print(f"Processing: {filepath.name}...")
     
     # Try pdfplumber first (better quality), fallback to PyPDF2
@@ -59,8 +60,14 @@ def extract_from_pdf(filepath: Path) -> Dict:
         print(f"  ❌ Failed to extract meaningful text from {filepath.name}")
         return None
     
-    # Clean and chunk the text
-    cleaned_text = clean_text(text)
+    # Enhanced cleaning for PDF text
+    cleaned_text = clean_pdf_text(text)
+    
+    # Extract structured content
+    cleaner = AdvancedTextCleaner()
+    structured_content = cleaner.extract_structured_content(cleaned_text)
+    
+    # Chunk the text with better boundaries
     chunks = chunk_text(cleaned_text, chunk_size=512, overlap=50)
     
     return {
@@ -68,7 +75,9 @@ def extract_from_pdf(filepath: Path) -> Dict:
         "text": cleaned_text,
         "chunks": chunks,
         "num_chunks": len(chunks),
-        "char_count": len(cleaned_text)
+        "char_count": len(cleaned_text),
+        "headers": structured_content.get('headers', []),
+        "has_code": len(structured_content.get('code_blocks', [])) > 0
     }
 
 

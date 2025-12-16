@@ -11,50 +11,81 @@ from typing import List, Dict, Any
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.utils.config import config
 from src.utils.helpers import save_jsonl, load_json, extract_topics, generate_id
+from src.data_processing.data_augmentation import (
+    DataAugmentor, SemanticChunker, augment_dataset, create_contrastive_pairs
+)
 
 
-# Sample Q&A templates for generating synthetic training data
+# Enhanced Q&A templates for diverse question types
 QA_TEMPLATES = [
     {
-        "type": "definition",
+        "type": "conceptual",
         "patterns": [
             "What is {topic}?",
             "Define {topic}.",
             "Explain {topic}.",
-            "What do you mean by {topic}?"
+            "What do you mean by {topic}?",
+            "Describe the concept of {topic}."
         ]
     },
     {
-        "type": "explanation",
+        "type": "procedural",
         "patterns": [
             "Explain how {topic} works.",
             "How does {topic} function?",
             "Describe the working of {topic}.",
-            "Explain the mechanism of {topic}."
+            "Explain the mechanism of {topic}.",
+            "What is the process of {topic}?",
+            "Walk me through {topic} step by step."
         ]
     },
     {
-        "type": "comparison",
+        "type": "comparative",
         "patterns": [
             "What is the difference between {topic1} and {topic2}?",
             "Compare {topic1} and {topic2}.",
-            "How is {topic1} different from {topic2}?"
+            "How is {topic1} different from {topic2}?",
+            "Compare and contrast {topic1} with {topic2}.",
+            "What are the similarities and differences between {topic1} and {topic2}?"
         ]
     },
     {
-        "type": "advantage",
+        "type": "analytical",
         "patterns": [
             "What are the advantages of {topic}?",
+            "What are the disadvantages of {topic}?",
             "Why use {topic}?",
-            "What are the benefits of {topic}?"
+            "What are the benefits of {topic}?",
+            "Analyze the trade-offs of {topic}.",
+            "What are the limitations of {topic}?"
         ]
     },
     {
-        "type": "example",
+        "type": "application",
         "patterns": [
-            "Give an example of {topic}.",
-            "Provide examples of {topic}.",
-            "What are some examples of {topic}?"
+            "When should you use {topic}?",
+            "What are the applications of {topic}?",
+            "In what scenarios is {topic} used?",
+            "Give real-world examples of {topic}.",
+            "How is {topic} applied in practice?"
+        ]
+    },
+    {
+        "type": "troubleshooting",
+        "patterns": [
+            "What problems can occur with {topic}?",
+            "Why would {topic} fail?",
+            "How do you debug issues with {topic}?",
+            "What are common errors in {topic}?"
+        ]
+    },
+    {
+        "type": "deep_understanding",
+        "patterns": [
+            "Explain {topic} in detail.",
+            "Provide a comprehensive explanation of {topic}.",
+            "What are all the components of {topic}?",
+            "Explain {topic} with examples and diagrams."
         ]
     }
 ]
@@ -80,32 +111,57 @@ def create_training_example(content: str, source: str, topics: List[str] = None)
 
 
 def generate_qa_pairs(content: str, source: str) -> List[Dict[str, Any]]:
-    """Generate Q&A pairs from content (enhanced version)"""
+    """Generate diverse Q&A pairs from content (enhanced version)"""
     qa_pairs = []
     topics = extract_topics(content)
+    augmentor = DataAugmentor()
     
-    # Create general explanation
+    # Create general explanation with reasoning chain
+    base_answer = augmentor.add_reasoning_chain("", content)
     qa_pairs.append({
         "id": generate_id(content[:100]),
         "instruction": f"Explain the concept covered in {source}.",
         "input": "",
-        "output": content,
+        "output": base_answer,
         "source": source,
         "topics": topics,
-        "text": f"### Instruction:\nExplain the concept covered in {source}.\n\n### Response:\n{content}"
+        "text": f"### Instruction:\nExplain the concept covered in {source}.\n\n### Response:\n{base_answer}"
     })
     
-    # Create topic-specific questions
-    for topic in topics[:3]:  # Limit to top 3 topics
+    # Create diverse topic-specific questions using templates
+    for i, topic in enumerate(topics[:3]):  # Limit to top 3 topics
+        # Select random template type
+        template_type = random.choice(QA_TEMPLATES)
+        pattern = random.choice(template_type["patterns"])
+        
+        # Handle comparison questions differently
+        if "{topic1}" in pattern and len(topics) > 1:
+            other_topic = topics[(i + 1) % len(topics)]
+            question = pattern.format(topic1=topic, topic2=other_topic)
+        else:
+            question = pattern.format(topic=topic)
+        
         qa_pairs.append({
-            "id": generate_id(f"{topic}_{content[:50]}"),
-            "instruction": f"What is {topic}? Explain with reference to the course material.",
+            "id": generate_id(f"{topic}_{content[:50]}_{i}"),
+            "instruction": question,
             "input": "",
             "output": content,
             "source": source,
             "topics": [topic],
-            "text": f"### Instruction:\nWhat is {topic}? Explain with reference to the course material.\n\n### Response:\n{content}"
+            "question_type": template_type["type"],
+            "text": f"### Instruction:\n{question}\n\n### Response:\n{content}"
         })
+    
+    # Generate paraphrased versions for first question
+    if qa_pairs:
+        first_q = qa_pairs[0]["instruction"]
+        paraphrases = augmentor.paraphrase_question(first_q)
+        for j, paraphrase in enumerate(paraphrases[1:3], 1):  # Add 2 paraphrases
+            new_qa = qa_pairs[0].copy()
+            new_qa["id"] = f"{qa_pairs[0]['id']}_para_{j}"
+            new_qa["instruction"] = paraphrase
+            new_qa["text"] = f"### Instruction:\n{paraphrase}\n\n### Response:\n{new_qa['output']}"
+            qa_pairs.append(new_qa)
     
     return qa_pairs
 
@@ -162,8 +218,11 @@ def process_books(books_dir: Path) -> List[Dict[str, Any]]:
 def create_dataset():
     """Main function to create training dataset"""
     print("=" * 60)
-    print("Creating Training Dataset".center(60))
+    print("Creating Enhanced Training Dataset".center(60))
     print("=" * 60)
+    
+    # Initialize semantic chunker
+    chunker = SemanticChunker(chunk_size=512, overlap=50)
     
     # Collect all training data
     all_training_data = []
@@ -183,10 +242,16 @@ def create_dataset():
         print("  2. extract_pdfs.py")
         return
     
+    print(f"\n📊 Generated {len(all_training_data)} base examples")
+    
+    # Apply data augmentation
+    print("\n🔄 Applying data augmentation...")
+    all_training_data = augment_dataset(all_training_data, augmentation_factor=2)
+    
     # Shuffle the data
     random.shuffle(all_training_data)
     
-    # Split into train and validation
+    # Split into train and validation (90/10 split)
     split_idx = int(len(all_training_data) * 0.9)
     train_data = all_training_data[:split_idx]
     val_data = all_training_data[split_idx:]
@@ -196,11 +261,21 @@ def create_dataset():
     save_jsonl(train_data, output_dir / "train.jsonl")
     save_jsonl(val_data, output_dir / "val.jsonl")
     
-    print(f"\n✅ Dataset created successfully!")
+    # Generate statistics
+    question_types = {}
+    for item in train_data:
+        qtype = item.get("question_type", "general")
+        question_types[qtype] = question_types.get(qtype, 0) + 1
+    
+    print(f"\n✅ Enhanced dataset created successfully!")
     print(f"📊 Total examples: {len(all_training_data)}")
     print(f"   Training: {len(train_data)}")
     print(f"   Validation: {len(val_data)}")
-    print(f"📁 Saved to: {output_dir}")
+    print(f"\n📈 Question type distribution:")
+    for qtype, count in sorted(question_types.items(), key=lambda x: x[1], reverse=True):
+        print(f"   {qtype}: {count}")
+    print(f"\n📁 Saved to: {output_dir}")
+
 
 
 def main():

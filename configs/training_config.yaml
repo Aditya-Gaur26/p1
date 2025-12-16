@@ -5,13 +5,14 @@ model:
   name: "Qwen/Qwen2.5-7B-Instruct"  # Can change to 0.6B, 1.5B, 3B, 14B, or 32B
   cache_dir: "./models/base"
   trust_remote_code: true
-  use_flash_attention_2: false  # Set true if supported
+  use_flash_attention_2: true    # Enable Flash Attention 2 for 2-4x speedup
+  attn_implementation: "flash_attention_2"
 
-# LoRA Configuration
+# LoRA Configuration (Optimized)
 lora:
-  r: 16                          # LoRA rank (higher = more parameters)
-  lora_alpha: 32                 # LoRA scaling factor
-  target_modules:                # Modules to apply LoRA
+  r: 32                          # Increased rank for better capacity (16→32)
+  lora_alpha: 64                 # Keep alpha = 2*r for optimal scaling
+  target_modules:                # Comprehensive module coverage
     - q_proj
     - k_proj
     - v_proj
@@ -19,49 +20,66 @@ lora:
     - gate_proj
     - up_proj
     - down_proj
-  lora_dropout: 0.1
+    - embed_tokens              # NEW: Include embedding layer for better adaptation
+  lora_dropout: 0.05             # Reduced dropout for better learning (0.1→0.05)
   bias: "none"
   task_type: "CAUSAL_LM"
 
-# Quantization
+# Quantization (More Aggressive)
 quantization:
-  load_in_8bit: true             # Use 8-bit quantization
-  load_in_4bit: false            # Use 4-bit quantization (even more memory efficient)
-  bnb_4bit_compute_dtype: "float16"
+  load_in_8bit: false            # Using 4-bit instead for better efficiency
+  load_in_4bit: true             # More aggressive quantization
+  bnb_4bit_compute_dtype: "bfloat16"
   bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true  # Additional compression layer
 
-# Training Parameters
+# Training Parameters (Optimized)
 training:
   output_dir: "./models/fine_tuned"
-  num_train_epochs: 3
+  num_train_epochs: 5            # More epochs for better convergence (3→5)
   per_device_train_batch_size: 4
   per_device_eval_batch_size: 4
-  gradient_accumulation_steps: 4
+  gradient_accumulation_steps: 8  # Increased for stability (4→8)
   gradient_checkpointing: true
-  learning_rate: 2.0e-4
+  gradient_checkpointing_kwargs:
+    use_reentrant: false         # Better memory efficiency
+  learning_rate: 5.0e-5          # Lower LR for stability (2e-4→5e-5)
   weight_decay: 0.001
-  warmup_ratio: 0.03
-  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1              # Longer warmup (0.03→0.1)
+  warmup_steps: 0                # Use ratio instead
+  lr_scheduler_type: "cosine_with_restarts"  # Better than plain cosine
   
   # Optimization
   optim: "paged_adamw_8bit"      # Memory-efficient optimizer
-  max_grad_norm: 0.3
+  max_grad_norm: 1.0             # Less aggressive clipping (0.3→1.0)
   fp16: false
   bf16: true                     # Use bfloat16 if available
+  tf32: true                     # Enable TF32 for Ampere GPUs
   
   # Logging & Saving
   logging_steps: 10
-  save_steps: 100
-  save_total_limit: 3
+  logging_first_step: true
+  save_steps: 50                 # More frequent saves (100→50)
+  save_total_limit: 5            # Keep more checkpoints (3→5)
   evaluation_strategy: "steps"
-  eval_steps: 100
+  eval_steps: 50                 # More frequent evaluation (100→50)
   load_best_model_at_end: true
   metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  
+  # Early Stopping
+  early_stopping_patience: 3     # NEW: Stop if no improvement for 3 evals
+  early_stopping_threshold: 0.001  # Minimum change to qualify as improvement
   
   # Data
   max_seq_length: 2048
   dataset_text_field: "text"
   packing: false
+  
+  # Advanced settings
+  report_to: ["tensorboard"]     # Track with tensorboard
+  remove_unused_columns: false
+  ddp_find_unused_parameters: false
 
 # Data Configuration
 data:

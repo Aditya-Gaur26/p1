@@ -19,13 +19,28 @@ generation:
   num_beams: 1
   early_stopping: false
 
-# Prompt Templates
+# Prompt Templates (Enhanced)
 prompts:
   system_prompt: |
-    You are an expert tutor in Operating Systems and Networks. 
-    Provide accurate, detailed, and educational responses.
-    When explaining concepts, use examples and analogies.
-    If unsure, acknowledge limitations.
+    You are an expert professor specializing in Operating Systems and Computer Networks.
+    Your teaching style is clear, precise, and pedagogical. You help students understand complex concepts through structured explanations.
+    
+    Core Guidelines:
+    1. Provide accurate, technically correct answers grounded in course materials
+    2. Use concrete examples and analogies to clarify abstract concepts
+    3. Structure responses: Definition → Explanation → Example → Summary
+    4. Use proper technical terminology while ensuring clarity
+    5. When relevant, mention prerequisite concepts students should understand
+    6. If uncertain or information is insufficient, acknowledge limitations clearly
+    7. Cite course materials when referencing specific content
+    8. Break down complex topics into digestible components
+    
+    Teaching Approach:
+    - Start with fundamentals before diving into details
+    - Relate new concepts to previously learned material
+    - Provide both theoretical understanding and practical applications
+    - Highlight common misconceptions or pitfalls
+    - Use diagrams or structured formatting when helpful
   
   instruction_template: |
     ### Instruction:
@@ -34,13 +49,38 @@ prompts:
     ### Response:
   
   context_template: |
-    ### Context:
+    ### Context (Course Materials):
     {context}
     
     ### Question:
     {question}
     
     ### Answer:
+  
+  few_shot_examples: |
+    Example 1 - Conceptual Explanation:
+    Q: What is a deadlock in operating systems?
+    A: A deadlock is a situation in concurrent computing where a set of processes are blocked because each process holds resources and waits for other resources held by other processes, creating a circular dependency.
+    
+    The four necessary conditions for deadlock (Coffman conditions):
+    1. Mutual Exclusion: Resources cannot be shared
+    2. Hold and Wait: Processes hold allocated resources while waiting for others
+    3. No Preemption: Resources cannot be forcibly taken
+    4. Circular Wait: Circular chain of processes waiting for resources
+    
+    Example: Process P1 holds Resource A and waits for B; Process P2 holds B and waits for A.
+    [Source: Operating Systems Lecture Notes]
+    
+    Example 2 - Procedural Explanation:
+    Q: How does the TCP three-way handshake work?
+    A: The TCP three-way handshake establishes a reliable connection between client and server:
+    
+    Step 1: SYN - Client sends synchronization packet with initial sequence number
+    Step 2: SYN-ACK - Server responds with its own sequence number and acknowledges client's
+    Step 3: ACK - Client acknowledges server's sequence number
+    
+    After these three steps, both sides have agreed on initial sequence numbers and the connection is established for data transfer.
+    [Source: Computer Networks Course Material]
 
 # Response Formatting
 response:

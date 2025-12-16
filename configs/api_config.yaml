@@ -52,3 +52,26 @@ cache:
   enabled: true
   ttl_hours: 24                   # Time to live for cached results
   max_size_mb: 100
+
+# Embedding Models Configuration
+embeddings:
+  primary_model: "sentence-transformers/all-mpnet-base-v2"  # Upgraded from all-MiniLM-L6-v2
+  fallback_model: "sentence-transformers/all-MiniLM-L6-v2"  # Faster fallback
+  batch_size: 32
+  normalize_embeddings: true
+  device: "auto"  # "auto", "cuda", "cpu"
+  
+  # Alternative specialized models (optional)
+  alternatives:
+    scientific: "allenai/specter"  # Better for academic papers
+    multilingual: "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+    
+# RAG Configuration
+rag:
+  retrieval_method: "hybrid"      # "dense", "sparse", "hybrid"
+  top_k: 5                        # Number of documents to retrieve
+  rerank: true                    # Enable reranking
+  rerank_model: "cross-encoder"   # "cross-encoder", "colbert"
+  query_expansion: true           # Expand queries with synonyms
+  adaptive_context: true          # Adjust context size based on query
+
