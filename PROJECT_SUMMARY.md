@@ -9,7 +9,7 @@ Congratulations! Your complete fine-tuning project for Operating Systems and Net
 ### 🏗️ Complete Project Structure
 
 ```
-btp_selection/
+project/
 ├── 📄 README.md                    # Main documentation (comprehensive)
 ├── 📄 QUICKSTART.md               # Quick start guide
 ├── 📄 EXPLANATION.md              # Technical deep dive
