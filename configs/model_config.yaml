@@ -1,0 +1,50 @@
+# Model Configuration for Inference
+
+# Model Selection
+model:
+  base_model: "Qwen/Qwen2.5-7B-Instruct"
+  adapter_path: "./models/fine_tuned"
+  device: "auto"                    # "auto", "cuda", "cpu"
+  device_map: "auto"
+  trust_remote_code: true
+
+# Generation Parameters
+generation:
+  max_new_tokens: 512
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  repetition_penalty: 1.1
+  do_sample: true
+  num_beams: 1
+  early_stopping: false
+
+# Prompt Templates
+prompts:
+  system_prompt: |
+    You are an expert tutor in Operating Systems and Networks. 
+    Provide accurate, detailed, and educational responses.
+    When explaining concepts, use examples and analogies.
+    If unsure, acknowledge limitations.
+  
+  instruction_template: |
+    ### Instruction:
+    {instruction}
+    
+    ### Response:
+  
+  context_template: |
+    ### Context:
+    {context}
+    
+    ### Question:
+    {question}
+    
+    ### Answer:
+
+# Response Formatting
+response:
+  include_sources: true
+  include_confidence: true
+  max_context_length: 1500
+  citation_format: "[Source: {source}]"

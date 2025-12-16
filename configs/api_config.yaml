@@ -1,0 +1,54 @@
+# API Configuration for External Services
+
+# YouTube Data API v3
+youtube:
+  enabled: true
+  max_results: 5
+  order_by: "relevance"           # "relevance", "viewCount", "rating"
+  video_duration: "medium"        # "any", "short", "medium", "long"
+  filters:
+    min_views: 1000
+    min_rating: 4.0
+    language: "en"
+  relevance_threshold: 0.7
+
+# arXiv API
+arxiv:
+  enabled: true
+  max_results: 5
+  sort_by: "relevance"            # "relevance", "lastUpdatedDate", "submittedDate"
+  categories:
+    - "cs.OS"                     # Operating Systems
+    - "cs.NI"                     # Networking
+    - "cs.DC"                     # Distributed Computing
+    - "cs.PF"                     # Performance
+  relevance_threshold: 0.6
+
+# Google Scholar (via SerpAPI - optional)
+google_scholar:
+  enabled: false
+  max_results: 3
+  api_key_env: "SERPAPI_KEY"
+
+# Wikipedia API (for concept definitions)
+wikipedia:
+  enabled: true
+  language: "en"
+  max_summary_length: 500
+
+# Course-specific resources
+custom_resources:
+  enabled: true
+  resources:
+    - name: "GeeksforGeeks"
+      base_url: "https://www.geeksforgeeks.org"
+      topics: ["operating-systems", "computer-network"]
+    - name: "Tutorialspoint"
+      base_url: "https://www.tutorialspoint.com"
+      topics: ["operating_system", "computer_networks"]
+
+# Caching
+cache:
+  enabled: true
+  ttl_hours: 24                   # Time to live for cached results
+  max_size_mb: 100

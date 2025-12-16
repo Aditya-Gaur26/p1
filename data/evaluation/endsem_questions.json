@@ -1,0 +1,62 @@
+[
+  {
+    "question": "What is a process in an operating system?",
+    "answer": "A process is an instance of a program in execution. It includes the program code, current activity represented by the program counter, contents of processor registers, process stack containing temporary data, and data section containing global variables.",
+    "topic": "process management",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Explain the difference between process and thread.",
+    "answer": "A process is an independent program with its own memory space, while a thread is a lightweight unit of execution within a process. Threads share the same memory space and resources of their parent process, making context switching between threads faster than between processes.",
+    "topic": "process management",
+    "difficulty": "medium"
+  },
+  {
+    "question": "What are the necessary conditions for deadlock to occur?",
+    "answer": "The four necessary conditions for deadlock are: 1) Mutual Exclusion - at least one resource must be held in a non-sharable mode, 2) Hold and Wait - a process must be holding at least one resource and waiting for additional resources, 3) No Preemption - resources cannot be forcibly removed from processes, 4) Circular Wait - there must exist a circular chain of processes where each process holds resources needed by the next process in the chain.",
+    "topic": "deadlock",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Explain the TCP three-way handshake.",
+    "answer": "The TCP three-way handshake establishes a connection between client and server: 1) SYN - Client sends a SYN packet with an initial sequence number to the server, 2) SYN-ACK - Server responds with SYN-ACK, acknowledging the client's SYN and sending its own sequence number, 3) ACK - Client sends an ACK to acknowledge the server's SYN-ACK. After these three steps, the connection is established and data transfer can begin.",
+    "topic": "networking",
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is virtual memory and why is it used?",
+    "answer": "Virtual memory is a memory management technique that provides an illusion of a large main memory by using disk storage. It allows programs to use more memory than physically available RAM. Benefits include: process isolation, efficient memory utilization, ability to run larger programs, and simplified memory management through address translation.",
+    "topic": "memory management",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Explain the difference between paging and segmentation.",
+    "answer": "Paging divides memory into fixed-size blocks called pages and frames, while segmentation divides memory into variable-size segments based on logical divisions. Paging is transparent to programmers and eliminates external fragmentation, but may cause internal fragmentation. Segmentation reflects the logical structure of programs but can suffer from external fragmentation.",
+    "topic": "memory management",
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the purpose of the OSI model?",
+    "answer": "The OSI (Open Systems Interconnection) model is a conceptual framework that standardizes network communication into seven layers: Physical, Data Link, Network, Transport, Session, Presentation, and Application. It provides a reference for understanding and designing network protocols, enables interoperability between different systems, and helps troubleshoot network issues by isolating problems to specific layers.",
+    "topic": "networking",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Compare FCFS, SJF, and Round Robin scheduling algorithms.",
+    "answer": "FCFS (First-Come-First-Served) executes processes in arrival order, simple but may cause convoy effect. SJF (Shortest Job First) selects the process with shortest burst time, optimal for average waiting time but difficult to implement due to prediction requirements. Round Robin assigns fixed time quantum to each process in circular order, provides fairness and good response time but may have high context switching overhead.",
+    "topic": "cpu scheduling",
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the difference between UDP and TCP?",
+    "answer": "TCP (Transmission Control Protocol) is connection-oriented, reliable, and provides ordered delivery with error checking and flow control, but has higher overhead. UDP (User Datagram Protocol) is connectionless, unreliable, faster, and has lower overhead, making it suitable for real-time applications like video streaming and gaming where occasional packet loss is acceptable.",
+    "topic": "networking",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Explain the Banker's Algorithm for deadlock avoidance.",
+    "answer": "Banker's Algorithm is a deadlock avoidance algorithm that ensures the system always remains in a safe state. It works by checking if granting a resource request will leave the system in a safe state before allocation. The algorithm maintains matrices for available resources, maximum demand, current allocation, and remaining need for each process. Before allocating resources, it simulates the allocation and runs a safety algorithm to verify if all processes can complete.",
+    "topic": "deadlock",
+    "difficulty": "hard"
+  }
+]

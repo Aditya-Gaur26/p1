@@ -1,0 +1,80 @@
+# Training Configuration for Fine-tuning Qwen3
+
+# Model Configuration
+model:
+  name: "Qwen/Qwen2.5-7B-Instruct"  # Can change to 0.6B, 1.5B, 3B, 14B, or 32B
+  cache_dir: "./models/base"
+  trust_remote_code: true
+  use_flash_attention_2: false  # Set true if supported
+
+# LoRA Configuration
+lora:
+  r: 16                          # LoRA rank (higher = more parameters)
+  lora_alpha: 32                 # LoRA scaling factor
+  target_modules:                # Modules to apply LoRA
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  lora_dropout: 0.1
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Quantization
+quantization:
+  load_in_8bit: true             # Use 8-bit quantization
+  load_in_4bit: false            # Use 4-bit quantization (even more memory efficient)
+  bnb_4bit_compute_dtype: "float16"
+  bnb_4bit_quant_type: "nf4"
+
+# Training Parameters
+training:
+  output_dir: "./models/fine_tuned"
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  learning_rate: 2.0e-4
+  weight_decay: 0.001
+  warmup_ratio: 0.03
+  lr_scheduler_type: "cosine"
+  
+  # Optimization
+  optim: "paged_adamw_8bit"      # Memory-efficient optimizer
+  max_grad_norm: 0.3
+  fp16: false
+  bf16: true                     # Use bfloat16 if available
+  
+  # Logging & Saving
+  logging_steps: 10
+  save_steps: 100
+  save_total_limit: 3
+  evaluation_strategy: "steps"
+  eval_steps: 100
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  
+  # Data
+  max_seq_length: 2048
+  dataset_text_field: "text"
+  packing: false
+
+# Data Configuration
+data:
+  train_file: "./data/processed/train.jsonl"
+  val_file: "./data/processed/val.jsonl"
+  train_split: 0.9
+  val_split: 0.1
+  
+# WandB Configuration (optional)
+wandb:
+  enabled: false
+  project: "os-networks-finetuning"
+  name: "qwen3-lora-finetune"
+  
+# Seed for reproducibility
+seed: 42
