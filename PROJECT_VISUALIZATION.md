@@ -52,7 +52,7 @@
 ## 📁 Project Structure (Complete)
 
 ```
-btp_selection/
+project/
 │
 ├── 📄 Documentation (Start Here!)
 │   ├── README.md ⭐ (Main documentation)

@@ -56,7 +56,7 @@ This project fine-tunes a Qwen3 language model on Operating Systems and Networks
 ## 📁 Project Structure
 
 ```
-btp_selection/
+project/
 ├── data/                           # Training data
 │   ├── raw/                        # Original course materials
 │   │   ├── slides/                 # PPT/PDF slides
@@ -132,7 +132,6 @@ btp_selection/
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd btp_selection
 
 # Create virtual environment (recommended)
 python -m venv venv
