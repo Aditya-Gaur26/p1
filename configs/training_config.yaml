@@ -33,13 +33,13 @@ quantization:
   bnb_4bit_quant_type: "nf4"
   bnb_4bit_use_double_quant: true  # Additional compression layer
 
-# Training Parameters (Optimized)
+# Training Parameters (Optimized for RTX 3060 12GB with Large Dataset)
 training:
   output_dir: "./models/fine_tuned"
-  num_train_epochs: 5            # More epochs for better convergence (3→5)
-  per_device_train_batch_size: 4
-  per_device_eval_batch_size: 4
-  gradient_accumulation_steps: 8  # Increased for stability (4→8)
+  num_train_epochs: 3            # 3 epochs for large dataset (5→3)
+  per_device_train_batch_size: 1 # Minimum for 12GB VRAM (4→1)
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16 # Compensate for small batch (8→16)
   gradient_checkpointing: true
   gradient_checkpointing_kwargs:
     use_reentrant: false         # Better memory efficiency
@@ -47,32 +47,34 @@ training:
   weight_decay: 0.001
   warmup_ratio: 0.1              # Longer warmup (0.03→0.1)
   warmup_steps: 0                # Use ratio instead
-  lr_scheduler_type: "cosine_with_restarts"  # Better than plain cosine
+  lr_scheduler_type: "cosine"    # Stable for long training
   
   # Optimization
   optim: "paged_adamw_8bit"      # Memory-efficient optimizer
   max_grad_norm: 1.0             # Less aggressive clipping (0.3→1.0)
-  fp16: false
-  bf16: true                     # Use bfloat16 if available
+  fp16: true                     # RTX 3060 supports FP16 well
+  bf16: false                    # Disable BF16 for RTX 3060
   tf32: true                     # Enable TF32 for Ampere GPUs
   
   # Logging & Saving
-  logging_steps: 10
+  logging_steps: 25              # Less frequent for speed
   logging_first_step: true
-  save_steps: 50                 # More frequent saves (100→50)
-  save_total_limit: 5            # Keep more checkpoints (3→5)
+  save_steps: 200                # Less frequent for large dataset (50→200)
+  save_total_limit: 3            # Keep fewer checkpoints to save disk (5→3)
   evaluation_strategy: "steps"
-  eval_steps: 50                 # More frequent evaluation (100→50)
+  eval_steps: 200                # Match save_steps
   load_best_model_at_end: true
   metric_for_best_model: "eval_loss"
   greater_is_better: false
   
   # Early Stopping
-  early_stopping_patience: 3     # NEW: Stop if no improvement for 3 evals
-  early_stopping_threshold: 0.001  # Minimum change to qualify as improvement
+  early_stopping_patience: 3     # Stop if no improvement for 3 evals
+  early_stopping_threshold: 0.001
   
-  # Data
-  max_seq_length: 2048
+  # Data - MEMORY OPTIMIZED
+  max_seq_length: 1024           # Reduced for memory (2048→1024)
+  dataloader_num_workers: 2      # Parallel data loading
+  dataloader_pin_memory: true    # Faster GPU transfer
   dataset_text_field: "text"
   packing: false
   

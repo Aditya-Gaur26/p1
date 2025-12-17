@@ -1,14 +1,16 @@
 """
-Test script to verify all improvements are working correctly
-Run this after installing dependencies to ensure everything is set up
+Diagnose Training Data Quality and Model Issues
+Identifies why your model hallucinates
 """
 
+import json
 import sys
 from pathlib import Path
-import time
+from collections import Counter, defaultdict
+import statistics
 
-# Add project root to path
 sys.path.append(str(Path(__file__).parent))
+from src.utils.config import config
 
 def test_imports():
     """Test that all new modules can be imported"""
