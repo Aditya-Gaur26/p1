@@ -2,16 +2,17 @@
 
 # Model Configuration
 model:
-  name: "Qwen/Qwen2.5-7B-Instruct"  # Can change to 0.6B, 1.5B, 3B, 14B, or 32B
+  name: "Qwen/Qwen2.5-1.5B-Instruct"  # Optimized for 4GB GPU (RTX 3050)
   cache_dir: "./models/base"
   trust_remote_code: true
-  use_flash_attention_2: false  # Set true if supported
+  use_flash_attention_2: true    # Enable Flash Attention 2 for 2-4x speedup
+  attn_implementation: "flash_attention_2"
 
-# LoRA Configuration
+# LoRA Configuration (Optimized)
 lora:
-  r: 16                          # LoRA rank (higher = more parameters)
-  lora_alpha: 32                 # LoRA scaling factor
-  target_modules:                # Modules to apply LoRA
+  r: 32                          # Increased rank for better capacity (16→32)
+  lora_alpha: 64                 # Keep alpha = 2*r for optimal scaling
+  target_modules:                # Comprehensive module coverage
     - q_proj
     - k_proj
     - v_proj
@@ -19,54 +20,73 @@ lora:
     - gate_proj
     - up_proj
     - down_proj
-  lora_dropout: 0.1
+    # embed_tokens removed - causes gradient explosion
+  lora_dropout: 0.05             # Reduced dropout for better learning (0.1→0.05)
   bias: "none"
   task_type: "CAUSAL_LM"
 
-# Quantization
+# Quantization (More Aggressive)
 quantization:
-  load_in_8bit: true             # Use 8-bit quantization
-  load_in_4bit: false            # Use 4-bit quantization (even more memory efficient)
-  bnb_4bit_compute_dtype: "float16"
+  load_in_8bit: false            # Using 4-bit instead for better efficiency
+  load_in_4bit: true             # More aggressive quantization
+  bnb_4bit_compute_dtype: "bfloat16"
   bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true  # Additional compression layer (saves 0.3GB)
 
-# Training Parameters
+# Training Parameters (Optimized for RTX 3050 4GB with 12K Dataset)
 training:
   output_dir: "./models/fine_tuned"
-  num_train_epochs: 3
-  per_device_train_batch_size: 4
-  per_device_eval_batch_size: 4
-  gradient_accumulation_steps: 4
+  num_train_epochs: 2            # 2 epochs for 12K dataset
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16 # Compensate for small batch
   gradient_checkpointing: true
-  learning_rate: 2.0e-4
+  gradient_checkpointing_kwargs:
+    use_reentrant: false         # Better memory efficiency
+  learning_rate: 5.0e-5          # Lower LR for stability (2e-4→5e-5)
   weight_decay: 0.001
-  warmup_ratio: 0.03
-  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1              # Longer warmup (0.03→0.1)
+  warmup_steps: 0                # Use ratio instead
+  lr_scheduler_type: "cosine"    # Stable for long training
   
   # Optimization
   optim: "paged_adamw_8bit"      # Memory-efficient optimizer
-  max_grad_norm: 0.3
-  fp16: false
-  bf16: true                     # Use bfloat16 if available
+  max_grad_norm: 1.0             # Less aggressive clipping (0.3→1.0)
+  fp16: true                     # RTX 3050 supports FP16 well
+  bf16: false                    # Disable BF16 for RTX 3050
+  tf32: true                     # Enable TF32 for Ampere GPUs
   
   # Logging & Saving
-  logging_steps: 10
-  save_steps: 100
-  save_total_limit: 3
+  logging_steps: 10               # Log every step for testing
+  logging_first_step: true
+  save_steps: 100                  # TEST: Checkpoint after step 1 to verify it works
+  save_total_limit: 3            # Keep last 3 checkpoints
   evaluation_strategy: "steps"
-  eval_steps: 100
-  load_best_model_at_end: true
+  eval_steps: 200                # Match save_steps for consistency
+  load_best_model_at_end: false  # Disabled for resume capability
   metric_for_best_model: "eval_loss"
+  greater_is_better: false
   
-  # Data
-  max_seq_length: 2048
+  # Early Stopping
+  early_stopping_patience: 3     # Stop if no improvement for 3 evals
+  early_stopping_threshold: 0.001
+  
+  # Data - MEMORY OPTIMIZED
+  max_seq_length: 384            # Optimized for dataset (max 139 tokens, 2.7x headroom)
+  dataloader_num_workers: 4      # Parallel data loading
+  dataloader_pin_memory: true    # Faster GPU transfer
   dataset_text_field: "text"
   packing: false
+  
+  # Advanced settings
+  report_to: ["tensorboard"]     # Track with tensorboard
+  remove_unused_columns: false
+  ddp_find_unused_parameters: false
 
 # Data Configuration
 data:
-  train_file: "./data/processed/train.jsonl"
-  val_file: "./data/processed/val.jsonl"
+  train_file: "./data/processed/train_llm.jsonl"
+  val_file: "./data/processed/val_llm.jsonl"
   train_split: 0.9
   val_split: 0.1
   

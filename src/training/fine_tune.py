@@ -11,14 +11,37 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     Trainer,
-    BitsAndBytesConfig
+    BitsAndBytesConfig,
+    TrainerCallback
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 import argparse
+import os
+import json
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.utils.config import config
+
+
+class SafeCheckpointCallback(TrainerCallback):
+    """Custom callback to handle checkpoint loading safely"""
+    
+    def on_save(self, args, state, control, **kwargs):
+        """Called after checkpoint save - clean up unsafe files if save_only_model=True"""
+        if args.save_only_model:
+            checkpoint_folder = os.path.join(
+                args.output_dir, 
+                f"checkpoint-{state.global_step}"
+            )
+            # Remove any .pt/.pth files that might have been saved
+            for file in Path(checkpoint_folder).glob("*.pt"):
+                if file.exists():
+                    file.unlink()
+                    print(f"  Removed unsafe file: {file.name}")
+            for file in Path(checkpoint_folder).glob("*.pth"):
+                if file.exists():
+                    file.unlink()
+                    print(f"  Removed unsafe file: {file.name}")
 
 
 def load_model_and_tokenizer(model_name: str, training_config: dict):
@@ -97,7 +120,19 @@ def setup_lora(model, lora_config: dict):
     return model
 
 
-def load_training_data(train_file: Path, val_file: Path):
+def tokenize_function(examples, tokenizer, max_length=2048):
+    """Tokenize text examples"""
+    result = tokenizer(
+        examples["text"],
+        truncation=True,
+        max_length=max_length,
+        padding=False,  # Dynamic padding in data collator
+    )
+    result["labels"] = result["input_ids"].copy()
+    return result
+
+
+def load_training_data(train_file: Path, val_file: Path, tokenizer, max_eval_samples=None):
     """Load training and validation datasets"""
     
     if not train_file.exists():
@@ -112,12 +147,24 @@ def load_training_data(train_file: Path, val_file: Path):
         }
     )
     
+    # Limit validation samples for faster evaluation
+    if max_eval_samples and 'validation' in dataset and len(dataset['validation']) > max_eval_samples:
+        dataset['validation'] = dataset['validation'].select(range(max_eval_samples))
+    
     print(f"✓ Loaded datasets:")
     print(f"  Training samples: {len(dataset['train'])}")
     if 'validation' in dataset:
         print(f"  Validation samples: {len(dataset['validation'])}")
     
-    return dataset
+    # Tokenize datasets
+    print("\n⚙️  Tokenizing datasets...")
+    tokenized_dataset = dataset.map(
+        lambda examples: tokenize_function(examples, tokenizer, max_length=2048),
+        batched=True,
+        remove_columns=dataset['train'].column_names,
+    )
+    
+    return tokenized_dataset
 
 
 def train_model(args):
@@ -145,7 +192,8 @@ def train_model(args):
     # Load datasets
     train_file = Path(training_config['data']['train_file'])
     val_file = Path(training_config['data']['val_file'])
-    dataset = load_training_data(train_file, val_file)
+    max_eval_samples = training_config['training'].get('max_eval_samples')
+    dataset = load_training_data(train_file, val_file, tokenizer, max_eval_samples)
     
     # Training arguments
     train_args = training_config['training']
@@ -153,47 +201,99 @@ def train_model(args):
         output_dir=train_args['output_dir'],
         num_train_epochs=train_args['num_train_epochs'],
         per_device_train_batch_size=train_args['per_device_train_batch_size'],
-        per_device_eval_batch_size=train_args.get('per_device_eval_batch_size', 4),
+        per_device_eval_batch_size=train_args['per_device_eval_batch_size'],
         gradient_accumulation_steps=train_args['gradient_accumulation_steps'],
-        gradient_checkpointing=train_args.get('gradient_checkpointing', True),
+        gradient_checkpointing=train_args['gradient_checkpointing'],
         learning_rate=train_args['learning_rate'],
-        weight_decay=train_args.get('weight_decay', 0.001),
-        warmup_ratio=train_args.get('warmup_ratio', 0.03),
-        lr_scheduler_type=train_args.get('lr_scheduler_type', 'cosine'),
-        optim=train_args.get('optim', 'paged_adamw_8bit'),
-        max_grad_norm=train_args.get('max_grad_norm', 0.3),
-        fp16=train_args.get('fp16', False),
-        bf16=train_args.get('bf16', True),
-        logging_steps=train_args.get('logging_steps', 10),
-        save_steps=train_args.get('save_steps', 100),
-        save_total_limit=train_args.get('save_total_limit', 3),
-        evaluation_strategy=train_args.get('evaluation_strategy', 'steps'),
-        eval_steps=train_args.get('eval_steps', 100),
-        load_best_model_at_end=train_args.get('load_best_model_at_end', True),
-        metric_for_best_model=train_args.get('metric_for_best_model', 'eval_loss'),
+        weight_decay=train_args['weight_decay'],
+        warmup_ratio=train_args['warmup_ratio'],
+        lr_scheduler_type=train_args['lr_scheduler_type'],
+        optim=train_args['optim'],
+        max_grad_norm=train_args['max_grad_norm'],
+        fp16=train_args['fp16'],
+        bf16=train_args['bf16'],
+        logging_steps=train_args['logging_steps'],
+        save_strategy="steps",  # Enable checkpointing
+        save_steps=train_args.get('save_steps', 200),
+        save_total_limit=train_args.get('save_total_limit', 2),
+        save_safetensors=True,  # Save model weights in safetensors format
+        save_only_model=True,   # FIX: Skip optimizer/scheduler states to avoid CVE-2025-32434
+        eval_strategy="steps",
+        eval_steps=train_args['eval_steps'],
+        load_best_model_at_end=False,
         report_to=["tensorboard"],
         logging_dir=f"{train_args['output_dir']}/logs",
         seed=training_config.get('seed', 42),
+        remove_unused_columns=False,
+        dataloader_num_workers=0,
     )
     
-    # Initialize trainer
-    trainer = SFTTrainer(
+    # Data collator with dynamic padding
+    from transformers import DataCollatorForLanguageModeling
+    
+    # Custom data collator that pads and sets padding tokens in labels to -100
+    class DataCollatorForCausalLM(DataCollatorForLanguageModeling):
+        def __call__(self, features):
+            # Pad sequences dynamically to the longest in the batch
+            batch = super().__call__(features)
+            # Replace padding token id in labels with -100 to ignore in loss
+            labels = batch["labels"].clone()
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            batch["labels"] = labels
+            return batch
+    
+    data_collator = DataCollatorForCausalLM(
+        tokenizer=tokenizer,
+        mlm=False
+    )
+    
+    # Initialize custom callback for safe checkpointing
+    safe_checkpoint_callback = SafeCheckpointCallback()
+    
+    # Initialize trainer - using standard Trainer instead of SFTTrainer
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=dataset['train'],
         eval_dataset=dataset.get('validation'),
-        tokenizer=tokenizer,
-        max_seq_length=train_args.get('max_seq_length', 2048),
-        dataset_text_field=train_args.get('dataset_text_field', 'text'),
-        packing=train_args.get('packing', False),
+        data_collator=data_collator,
+        callbacks=[safe_checkpoint_callback],
     )
     
     # Start training
-    print("\n🚀 Starting training...")
+    print("\n" + "="*60)
+    print("🚀 Starting training...")
     print(f"Model: {model_name}")
-    print(f"Output: {train_args['output_dir']}\n")
+    print(f"Output: {train_args['output_dir']}")
+    print(f"⚠️  Safe mode: Optimizer states won't be saved (CVE-2025-32434 mitigation)")
     
-    trainer.train()
+    # Auto-detect and resume from latest checkpoint
+    output_dir = Path(train_args['output_dir'])
+    checkpoint_dirs = [d for d in output_dir.glob("checkpoint-*") if d.is_dir()]
+    
+    resume_checkpoint = None
+    if checkpoint_dirs:
+        # Sort by step number and get latest
+        latest_checkpoint = max(checkpoint_dirs, key=lambda x: int(x.name.split("-")[1]))
+        
+        # Verify checkpoint has required files
+        required_files = ["adapter_model.safetensors", "trainer_state.json"]
+        checkpoint_valid = all((latest_checkpoint / f).exists() for f in required_files)
+        
+        if checkpoint_valid:
+            resume_checkpoint = str(latest_checkpoint)
+            print(f"📂 Resuming from checkpoint: {latest_checkpoint.name}")
+            print(f"   Note: Optimizer state will be reset (training from checkpoint model only)")
+        else:
+            print(f"⚠️  Found checkpoint {latest_checkpoint.name} but missing required files")
+            print(f"🎯 Starting fresh training instead")
+    else:
+        print("🎯 Starting fresh training")
+    
+    print("="*60 + "\n")
+    
+    # Train with auto-resume
+    trainer.train(resume_from_checkpoint=resume_checkpoint)
     
     # Save final model
     print("\n💾 Saving final model...")
