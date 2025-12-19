@@ -1,0 +1,140 @@
+[
+  {
+    "question": "Q1a (Process Virtualization): The system design team wants to implement a new shell utility called 'linecount' which takes a filename as an argument and outputs the total number of lines. Given that the shell is the parent process, explain the sequence of system calls (fork, exec, wait) required to execute this new utility.",
+    "answer": "The shell must first call fork() to create a child process. Inside the child process, exec() is called to replace the shell's memory image with the 'linecount' executable, passing the filename as an argument. Meanwhile, the parent shell calls wait() to pause execution until the child process finishes counting lines and exits, at which point the parent resumes.",
+    "topic": "Process Virtualization",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q1b (Process Virtualization): When performing the fork() operation in a system using paging, copying the entire memory space is inefficient. Explain the optimization technique OSs use to avoid this, and what happens when the child process subsequently attempts to modify a variable.",
+    "answer": "The OS uses 'Copy-on-Write' (COW). During fork(), the OS does not copy physical pages; instead, it maps the child's page table entries to the same physical frames as the parent and marks them as read-only. If the child (or parent) tries to modify a variable, a protection fault occurs, prompting the OS to allocate a new physical frame, copy the data there, update the page table, and grant write access.",
+    "topic": "Process Virtualization and Memory",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q1c (Process Virtualization): A legacy system uses cooperative multitasking where processes voluntarily yield control. To upgrade this to a preemptive multitasking system, what specific hardware mechanism is required and how does the OS use it to force context switches?",
+    "answer": "A hardware timer interrupt is required. The OS programs the timer to raise an interrupt after a specific time slice (quantum). When the interrupt fires, the CPU forces a transfer of control from the user process to the OS interrupt handler. The OS then saves the current process state (context) and calls the scheduler to select the next process, effectively regaining control without the process's cooperation.",
+    "topic": "Process Scheduling",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q2a (Memory Virtualization): A developer proposes using Prime Number sized pages (e.g., 3KB or 7KB) to avoid alignment issues with power-of-2 memory blocks. Critique this proposal.",
+    "answer": "This is a poor design choice. Standard paging uses power-of-2 sizes (e.g., 4KB) because it allows the hardware to split a virtual address into a VPN (Virtual Page Number) and Offset using simple bitwise shifts and masking. Using non-power-of-2 sizes (like 3KB) would require expensive integer division and modulo operations for every address translation, significantly slowing down memory access and complicating hardware logic.",
+    "topic": "Memory Virtualization - Paging",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q2b (Memory Virtualization): Consider a cache size of 4. For the memory access trace '1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5', compare FIFO and LRU. Which policy incurs fewer faults?",
+    "answer": "LRU performs better here. \nFIFO Trace: 1,2,3,4 (Fill) -> 5 (Evict 1) -> 1 (Evict 2) -> 2 (Evict 3)... It forces evictions on frequently accessed items (1 and 2) because they arrived early. \nLRU Trace: 1,2,3,4 (Fill) -> 1,2 (Hits, update recency) -> 5 (Evict 3, usually least recently used). LRU keeps the 'hot' pages (1 and 2) in the cache, resulting in fewer misses than FIFO for this looping pattern.",
+    "topic": "Memory Virtualization - Page Replacement",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q2c (Memory Virtualization): In a 64-bit architecture with 4KB pages, a linear page table is impossibly large. Explain how a Multi-Level Page Table solves the space issue, and what hardware component is essential to prevent the performance penalty of multiple memory lookups.",
+    "answer": "A Multi-Level Page Table solves the space issue by paging the page table itself. It only allocates memory for the parts of the page table hierarchy that are actually valid/in-use, saving vast amounts of memory for sparse address spaces. To mitigate the performance penalty of walking multiple levels (which would require multiple memory reads per access), a TLB (Translation Lookaside Buffer) is essential. The TLB caches the final Virtual-to-Physical translations, allowing the MMU to skip the table walk for frequently accessed pages.",
+    "topic": "Memory Virtualization - Optimization",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q3 (Concurrency): Design a synchronization mechanism for a shared database where Writers must have priority over Readers. If a Writer is waiting, no new Readers should be allowed to enter.",
+    "answer": "Use a `write_mutex` (for exclusive write access), a `read_mutex` (to protect reader count), and an additional `turnstile` (or `service_queue`) semaphore. \nProtocol: \n1. Readers must acquire `turnstile` then `read_mutex` to enter. \n2. Writers also acquire `turnstile` to indicate intent. \n3. Once a writer holds `turnstile`, new readers are blocked. \n4. The writer then acquires `write_mutex` to write. \nThis ensures that once a writer arrives, it blocks the entry gate (`turnstile`), preventing new readers from starting, satisfying the Writer Priority constraint.",
+    "topic": "Concurrency - Readers-Writers Problem",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q4a (File Systems): A disk partition has 10MB of storage and uses 8KB blocks. Each file requires a 512-byte metadata inode. If the system is filled with 1KB text files, what is the limiting factor: block count or inode storage?",
+    "answer": "The limiting factor is internal fragmentation (Block usage). \nTotal blocks = 10MB / 8KB ≈ 1280 blocks. \nEven though the files are only 1KB, each file must occupy a full 8KB block. Therefore, you can store at most 1280 files. The metadata overhead (1280 * 512 bytes ≈ 640KB) is small compared to the wasted space (7KB wasted per file). The system runs out of data blocks long before it runs out of inode space.",
+    "topic": "File Systems - Storage Management",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q4b (File Systems): Describe the disk read sequence required to read the file `/home/data/log.txt`. Assume the root inode is known.",
+    "answer": "1) Read Root Inode. 2) Read Root Data Block to find 'home' inode number. 3) Read 'home' Inode. 4) Read 'home' Data Block to find 'data' inode number. 5) Read 'data' Inode. 6) Read 'data' Data Block to find 'log.txt' inode number. 7) Read 'log.txt' Inode. 8) Read 'log.txt' Data Block. (Total ~8 disk accesses without caching).",
+    "topic": "File Systems - Operations",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q4c (File Systems): Writing to disk is slow. Explain how 'Journaling' (or Write-Ahead Logging) helps with file system consistency and potential recovery speed after a crash.",
+    "answer": "Journaling writes metadata/data updates to a circular log (journal) *before* writing them to the main file system structures. If the system crashes, the OS only needs to replay the small journal to restore consistency, rather than scanning the entire disk (fsck). While it adds a small write overhead (writing twice), it ensures atomicity and drastically reduces recovery time.",
+    "topic": "File Systems - Performance",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q5a (Networking - TCP): A client program wants to send an HTTP request to a server. List the sequence of Socket API calls the client must make.",
+    "answer": "1) socket() - Create the endpoint. \n2) connect() - Initiate 3-way handshake with server IP/Port. \n3) write() / send() - Send the HTTP request data. \n4) read() / recv() - Wait for and receive the response. \n5) close() - Terminate the connection.",
+    "topic": "Networking - TCP APIs",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q5b (Networking - TCP): If a packet arrives with the correct checksum but the Sequence Number is higher than expected (a gap exists), what does the TCP receiver do?",
+    "answer": "The receiver detects a gap implies a missing packet (packet loss or out-of-order delivery). It buffers the out-of-order segment (the higher sequence number) but does *not* acknowledge it. Instead, it sends a Duplicate ACK for the *last correctly received* in-order byte. This signals the sender that a hole exists in the stream starting at that specific offset.",
+    "topic": "Networking - Data Validation",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q5c (Networking - TCP): Explain the TCP 'Slow Start' phase in Congestion Control.",
+    "answer": "Slow Start is used to determine network capacity. 1) The sender starts with a Congestion Window (cwnd) of 1 MSS (Maximum Segment Size). 2) For every ACK received, cwnd is increased by 1 MSS (effectively doubling the window every RTT). 3) This exponential growth continues until a packet loss occurs or the 'Slow Start Threshold' (ssthresh) is reached, at which point it switches to Congestion Avoidance (linear growth).",
+    "topic": "Networking - TCP Reliability",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q6a (Networking L2/L3): A computer with IP 10.0.0.5 wants to send a frame to 10.0.0.20. Both are on the same /24 subnet. How does the sender determine the destination MAC address?",
+    "answer": "The sender uses ARP (Address Resolution Protocol). \n1. Check local ARP cache. \n2. If not found, broadcast an ARP Request ('Who has 10.0.0.20? Tell 10.0.0.5'). \n3. The device with IP 10.0.0.20 replies with its MAC address. \n4. Sender updates cache and sends the Ethernet frame to that MAC.",
+    "topic": "Networking - L2/L3",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q6b (Networking L2/L3): A packet is travelling from Host A (192.168.1.5) to a Server (8.8.8.8) through a Router. Explain how the Source/Destination IP and Source/Destination MAC addresses change when the packet passes through the Router.",
+    "answer": "The IP addresses (L3) generally remain constant (Src: 192.168.1.5, Dst: 8.8.8.8) throughout the journey (unless NAT is used). \nThe MAC addresses (L2) change at every hop. \n1. Host A sends frame with Src MAC: [Host A], Dst MAC: [Router Interface]. \n2. Router strips the frame, inspects IP. \n3. Router forwards packet in a NEW frame with Src MAC: [Router Outgoing Interface], Dst MAC: [Next Hop/Server].",
+    "topic": "Networking - Routing",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q7 (MCQ - Networking): Which protocol is responsible for translating a human-readable domain name (like www.google.com) into an IP address? Options: a) DHCP, b) DNS, c) ARP, d) HTTP",
+    "answer": "Answer: b) DNS (Domain Name System). \nReasoning: DNS is a hierarchical distributed naming system that queries nameservers to resolve a hostname to an IP address (A record). DHCP assigns IPs, ARP resolves IP to MAC, and HTTP is for transferring web content.",
+    "topic": "Networking - Protocols",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Q8 (MCQ - RAID): You are building an archival storage system where disk failure protection is critical. You must be able to survive the simultaneous failure of ANY TWO disks. Which RAID level is required? Options: a) RAID 1, b) RAID 5, c) RAID 6, d) RAID 10",
+    "answer": "Answer: c) RAID 6. \nReasoning: RAID 6 uses dual parity blocks distributed across all disks. This allows the array to reconstruct data even if two disks fail simultaneously. RAID 5 can only survive one failure. RAID 1 survives one (or more only if they are not in the same mirrored pair). RAID 6 is the standard for high fault tolerance.",
+    "topic": "Storage - RAID",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q9 (MCQ - Concurrency): Multiple threads are attempting to increment a single global counter variable `count++` concurrently. What happens if no synchronization is used? Options: a) Deadlock, b) Race Condition, c) Priority Inversion, d) Buffer Overflow",
+    "answer": "Answer: b) Race Condition. \nReasoning: `count++` is not atomic; it consists of Read-Modify-Write. If two threads read the same value (e.g., 10) before either writes back, they both write 11, losing one increment. The final result depends on the arbitrary timing of thread execution (the race).",
+    "topic": "Concurrency - Synchronization",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q10 (MCQ - Scheduling): In a Real-Time System where tasks have strict completion deadlines, which scheduling algorithm is optimal? Options: a) Round Robin, b) Shortest Job First, c) Earliest Deadline First (EDF), d) Lottery Scheduling",
+    "answer": "Answer: c) Earliest Deadline First (EDF). \nReasoning: EDF is a dynamic priority algorithm that assigns the highest priority to the process with the nearest deadline. It is mathematically proven to be optimal for uniprocessor scheduling (if a feasible schedule exists, EDF will find it). Round Robin and SJF ignore deadlines entirely.",
+    "topic": "Scheduling",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q11 (MCQ - Web Scalability): Your static website (images, CSS, JS) is loading very slowly for users in different continents. What is the most effective architectural change? Options: a) Vertical Scaling (larger server), b) Content Delivery Network (CDN), c) Database Sharding, d) Switching from TCP to UDP",
+    "answer": "Answer: b) Content Delivery Network (CDN). \nReasoning: CDNs distribute static assets to edge servers geographically closer to the user. This reduces latency (RTT) significantly compared to fetching data from a central origin server. Vertical scaling doesn't solve network latency. Sharding applies to databases, not static files.",
+    "topic": "Web Scalability",
+    "difficulty": "medium"
+  },
+{
+    "question": "Q12 (Concurrency - Deadlock): A system has four processes and three distinct resources. A deadlock occurs. Explain the four necessary conditions (Coffman conditions) that must simultaneously hold true for this deadlock to exist.",
+    "answer": "The four conditions are: 1) Mutual Exclusion: Resources cannot be shared; only one process uses a resource at a time. 2) Hold and Wait: A process holding at least one resource is waiting to acquire additional resources held by others. 3) No Preemption: Resources cannot be forcibly taken from a process; they must be released voluntarily. 4) Circular Wait: A set of processes exists {P1, P2... Pn} such that P1 is waiting for P2, P2 for P3... and Pn is waiting for P1.",
+    "topic": "Concurrency - Deadlock",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q13 (Virtualization): The DevOps team is deciding between using Virtual Machines (VMs) or Containers (e.g., Docker) for a microservices application. Explain the fundamental architectural difference between the two regarding the OS kernel.",
+    "answer": "The fundamental difference is the kernel isolation. A Virtual Machine runs a full guest Operating System with its own kernel on top of a Hypervisor; it is heavyweight but offers strong isolation. A Container shares the *host* OS kernel with other containers and uses kernel features (Namespaces and Cgroups) to isolate processes. Containers are lightweight and start faster, but if the host kernel crashes, all containers fail.",
+    "topic": "Virtualization - Containers vs VMs",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q14 (Distributed Systems): According to the CAP Theorem, why is it impossible for a distributed database to simultaneously guarantee Consistency, Availability, and Partition Tolerance during a network failure?",
+    "answer": "The theorem states you can strictly satisfy only two of the three. Since network failures (Partitions - P) are inevitable in distributed systems, the system must tolerate them. When a partition occurs (connection between nodes is cut), the system must make a binary choice: either 1) Stop serving requests to ensure data matches on both sides (Consistency over Availability), or 2) Serve requests with potentially stale data (Availability over Consistency). You cannot have both because updates cannot propagate across the severed network.",
+    "topic": "Distributed Systems - CAP Theorem",
+    "difficulty": "hard"
+  }
+]
