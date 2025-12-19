@@ -125,118 +125,6 @@ project/
 └── README.md                      # This file
 ```
 
-## 🚀 Quick Start
-
-### 1. Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-
-# Create virtual environment (recommended)
-python -m venv venv
-venv\Scripts\activate  # On Windows
-# source venv/bin/activate  # On Linux/Mac
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Copy and configure environment variables
-copy .env.template .env
-# Edit .env with your API keys
-```
-
-### 2. Prepare Data
-
-```bash
-# Place your course materials in data/raw/
-# - Slides in data/raw/slides/
-# - Books in data/raw/books/
-# - Notes in data/raw/notes/
-
-# Extract and process data
-python src/data_processing/extract_slides.py
-python src/data_processing/extract_pdfs.py
-python src/data_processing/create_dataset.py
-
-# Build vector database for RAG
-python src/data_processing/build_vectordb.py
-```
-
-### 3. Fine-tune the Model
-
-```bash
-# Configure training parameters in configs/training_config.yaml
-# Start fine-tuning (uses LoRA for efficiency)
-python src/training/fine_tune.py --config configs/training_config.yaml
-
-# Monitor training progress
-tensorboard --logdir outputs/logs/
-```
-
-### 4. Run Inference
-
-```bash
-# Interactive Q&A mode
-python -m src.inference.query_processor --interactive
-
-# Answer specific question
-python -m src.inference.query_processor --question "Explain process synchronization"
-
-# Evaluate on endsem questions
-python src/evaluation/evaluate_model.py --test-file data/evaluation/endsem_questions.json
-```
-
-## 🎓 Features
-
-### 1. **Fine-tuned Qwen3 Model**
-- Uses Parameter-Efficient Fine-Tuning (PEFT) with LoRA
-- Supports models from 0.6B to 32B parameters
-- Optimized for educational Q&A
-- Context-aware responses
-
-### 2. **Retrieval-Augmented Generation (RAG)**
-- ChromaDB vector database
-- Semantic search over course materials
-- Combines retrieval with generation
-- Reduces hallucination
-
-### 3. **YouTube Video Suggestions**
-- Automatically suggests relevant educational videos
-- Uses YouTube Data API v3
-- Filters by quality metrics (views, ratings)
-- Provides video titles, channels, and links
-
-### 4. **Research Paper Recommendations**
-- Searches arXiv for related papers
-- Provides abstracts and links
-- Categorizes by relevance
-- Includes citation information
-
-### 5. **Concept Mapping**
-- Identifies related concepts
-- Shows prerequisite knowledge
-- Suggests learning paths
-- Visual concept graphs (optional)
-
-### 6. **Advanced Question Answering**
-- Multiple answer formats (brief, detailed, example-based)
-- Step-by-step explanations
-- Code examples for OS/Network concepts
-- Diagram descriptions
-
-## 📊 Model Specifications
-
-### Supported Qwen3 Models
-
-| Model Size | Parameters | VRAM Required | Training Time (est.) | Recommended Use |
-|-----------|-----------|---------------|---------------------|----------------|
-| Qwen3-0.6B | 600M | ~4 GB | 2-4 hours | Quick prototyping |
-| Qwen3-1.5B | 1.5B | ~8 GB | 4-6 hours | Balanced performance |
-| Qwen3-3B | 3B | ~12 GB | 6-10 hours | Good quality |
-| Qwen3-7B | 7B | ~20 GB | 12-20 hours | High quality (Recommended) |
-| Qwen3-14B | 14B | ~40 GB | 24-36 hours | Very high quality |
-| Qwen3-32B | 32B | ~80 GB | 48+ hours | Maximum quality |
 
 ### Fine-Tuning Configuration
 
@@ -309,16 +197,6 @@ Performance:
 - Context Relevance: 92%
 ```
 
-## 🔧 Configuration
-
-### API Keys Required
-
-1. **YouTube Data API** (Optional, for video suggestions)
-   - Get key from: https://console.cloud.google.com/
-   - Free tier: 10,000 units/day
-
-2. **OpenAI API** (Optional, for embeddings)
-   - Alternative: Use open-source embeddings (sentence-transformers)
 
 ### Environment Variables
 
@@ -500,4 +378,3 @@ For questions or issues, please open an issue on GitHub.
 
 ---
 
-**Note**: This project is designed for educational purposes. Ensure you have proper permissions for course materials and comply with API usage terms.
