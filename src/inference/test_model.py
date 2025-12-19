@@ -60,6 +60,7 @@ def generate_response(model, tokenizer, instruction: str, max_new_tokens: int = 
     
     # Tokenize
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    input_length = inputs['input_ids'].shape[1]
     
     # Generate
     print("Generating response...")
@@ -76,11 +77,22 @@ def generate_response(model, tokenizer, instruction: str, max_new_tokens: int = 
     # Decode
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     
+    # Calculate token usage
+    total_tokens = outputs[0].shape[0]
+    output_tokens = total_tokens - input_length
+    
     # Extract only the response part (after "### Response:")
     if "### Response:" in response:
         response = response.split("### Response:")[1].strip()
     
-    return response
+    # Return response and token info
+    token_info = {
+        'input_tokens': input_length,
+        'output_tokens': output_tokens,
+        'total_tokens': total_tokens
+    }
+    
+    return response, token_info
 
 
 def main():
@@ -110,9 +122,10 @@ def main():
         # Generate response
         print("\n🤖 Model response:")
         print("-" * 70)
-        response = generate_response(model, tokenizer, instruction)
+        response, token_info = generate_response(model, tokenizer, instruction)
         print(response)
         print("-" * 70)
+        print(f"\n📊 Token usage: {token_info['input_tokens']} input + {token_info['output_tokens']} output = {token_info['total_tokens']} total tokens")
 
 
 if __name__ == "__main__":

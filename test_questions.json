@@ -1,0 +1,122 @@
+[
+  {
+    "question": "Q1a (Process Virtualization): The fork team wants to implement a new shell command 'fwe' which takes a file name as input and gives out the number of words in the file as output. Since shell itself is an executing process, explain how the existing system calls (repl/fork, execute/exec, wait) can be used to achieve this.",
+    "answer": "The shell process would use fork()/repl() to create a child process, then execute()/exec() to run the word count program with the file as argument, and wait() to collect the result. The child process executes the word counting logic and exits with the count, which the parent shell process retrieves.",
+    "topic": "Process Virtualization",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q1b (Process Virtualization): Assuming paging is used for memory management, explain how memory management will work when performing calls like repl()/fork() and execute()/exec().",
+    "answer": "During repl()/fork(), the OS creates a copy of the page table for the child process. With copy-on-write optimization, pages are shared initially and only copied when modified. During execute()/exec(), the OS discards the old page table and creates a new one for the new program, loading the program's code and data into new pages.",
+    "topic": "Process Virtualization and Memory",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q1c (Process Virtualization): The team currently uses cooperative approach. They need a pre-emptive mechanism to allow the OS to get control and seamlessly switch between processes. Explain the mechanism and protocol needed.",
+    "answer": "A pre-emptive approach requires a timer interrupt mechanism. The OS sets up a hardware timer that generates periodic interrupts. When the interrupt occurs, control transfers to the OS interrupt handler which can then context switch to another process. The protocol involves: 1) Timer initialization at boot, 2) Interrupt handler registration, 3) Context saving on interrupt, 4) Scheduler invocation, 5) Context restoration for next process. This allows the OS to regain control without process cooperation.",
+    "topic": "Process Scheduling",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q2a (Memory Virtualization): The team plans to divide virtual memory into pages of different sizes and map them to physical memory blocks of different sizes. What are your observations and comments on this approach?",
+    "answer": "This approach (variable-sized pages) is problematic. Standard paging uses fixed-size pages (e.g., 4KB) for several reasons: 1) Simplifies memory management and allocation, 2) Reduces fragmentation, 3) Makes page table implementation straightforward, 4) Enables efficient TLB usage. Variable-sized pages would cause external fragmentation, complicate allocation algorithms, and make hardware support difficult. Some systems support multiple fixed sizes (e.g., 4KB and 2MB huge pages), but not arbitrary variable sizes.",
+    "topic": "Memory Virtualization - Paging",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q2b (Memory Virtualization): With cache size of 3, for trace '0,1,2,0,1,3,0,3,1,2,1', the team claims FIFO is the best page replacement policy. What is your opinion?",
+    "answer": "FIFO is not necessarily the best policy. For this trace with cache size 3, FIFO would cause more page faults than optimal policies like LRU or OPT. FIFO suffers from Belady's anomaly where increasing cache size can actually increase page faults. Better alternatives include: LRU (Least Recently Used) which considers temporal locality, or Clock algorithm which approximates LRU with less overhead. The 'best' policy depends on the access pattern, but LRU generally performs better than FIFO for most workloads.",
+    "topic": "Memory Virtualization - Page Replacement",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q2c (Memory Virtualization): With 32-bit address space, 2KB pages, 4-byte page table entries, and 100 processes, there's significant memory overhead and each address translation requires two memory accesses. Suggest a better mechanism.",
+    "answer": "Use a multi-level page table and TLB (Translation Lookaside Buffer). Multi-level page tables reduce memory overhead by only allocating page table pages for used address ranges instead of the entire address space. TLB is a hardware cache that stores recent virtual-to-physical address translations, eliminating the need for page table walks on hits (reducing from 2 memory accesses to nearly 1 on average). With typical 95%+ TLB hit rates, this dramatically improves performance. Additional optimizations include inverted page tables or using larger page sizes to reduce table entries.",
+    "topic": "Memory Virtualization - Optimization",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q3 (Concurrency): Design a solution for multiple reader threads and single writer thread access to a document, ensuring no writer starvation. Use semaphores.",
+    "answer": "Solution using three semaphores: 1) readLock (mutex for reader count), 2) writeLock (mutex for write access), 3) writerQueue (ensures no writer starvation). Algorithm: Readers check if writer is waiting (using writerQueue), increment reader count protected by readLock, first reader acquires writeLock. Writers acquire writerQueue first (ensuring FIFO among writers), then acquire writeLock. After writing, release both. This prevents writer starvation by making readers wait if a writer is queued. Reader count ensures multiple concurrent reads while blocking writes.",
+    "topic": "Concurrency - Readers-Writers Problem",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q4a (File Systems): With 4KB blocks, 224KB total storage, and 256-byte metadata per file/directory, what is the maximum number of files/directories, and what does this imply?",
+    "answer": "Total blocks = 224KB / 4KB = 56 blocks. Each file/directory needs: 256 bytes metadata + at least 1 block (4KB) for data = minimum 4.25KB per entry. Maximum entries = approximately 224KB / 4.25KB ≈ 52 files/directories. This implies: 1) Very limited storage capacity, 2) High metadata overhead (metadata alone would use ~13KB for 52 files), 3) Need for efficient metadata management, 4) Most space consumed by minimum block allocation rather than actual data for small files (internal fragmentation).",
+    "topic": "File Systems - Storage Management",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q4b (File Systems): For 'read /user1/file.txt' operation, explain metadata handling and how many disk reads/writes will be performed.",
+    "answer": "Metadata handling requires: 1) Root directory inode read, 2) Read root directory data to find 'user1', 3) Read 'user1' directory inode, 4) Read 'user1' directory data to find 'file.txt', 5) Read 'file.txt' inode, 6) Read 'file.txt' data blocks. Total operations: Minimum 5-6 reads (no writes for read-only operation, unless access time updated). If using bitmap for free space management, may need 1-2 additional reads. Actual count depends on caching - with directory cache, can reduce to 1-2 reads.",
+    "topic": "File Systems - Operations",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q4c (File Systems): What mechanisms can the file system or controller use to improve the efficiency of disk reads and writes?",
+    "answer": "Key mechanisms: 1) Caching - Keep frequently accessed blocks in memory (buffer cache), 2) Prefetching - Read ahead predicted blocks based on sequential access patterns, 3) Write buffering - Batch multiple writes together, 4) Disk scheduling - Reorder requests to minimize seek time (e.g., elevator algorithm), 5) I/O merging - Combine adjacent requests, 6) Asynchronous I/O - Don't block on I/O completion.",
+    "topic": "File Systems - Performance",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q5a (Networking - TCP): What APIs should the OS provide for TCP communication between processes on different machines, and what is the OS role?",
+    "answer": "Unix socket APIs: 1) socket() - Create communication endpoint, 2) bind() - Assign address to socket, 3) listen() - Mark socket as passive (server), 4) accept() - Accept incoming connections (server), 5) connect() - Establish connection (client), 6) send()/recv() or write()/read() - Transfer data, 7) close() - Close connection. OS role: Manages TCP protocol stack, handles connection establishment (3-way handshake), maintains connection state, implements reliability mechanisms (acknowledgments, retransmissions), manages buffers, handles multiplexing/demultiplexing via port numbers.",
+    "topic": "Networking - TCP APIs",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q5b (Networking - TCP): How can the destination process validate incoming data?",
+    "answer": "Multiple validation mechanisms: 1) TCP checksum - Detects bit errors in segment, computed over header and data, receiver recomputes and compares, 2) Sequence numbers - Ensures correct ordering and detects missing segments, 3) Application-level checksums - Additional validation (e.g., MD5, SHA), 4) Acknowledgments - Sender knows data received correctly. For the binary stream example, checksum validation ensures integrity, while sequence numbers ensure all bits received in order.",
+    "topic": "Networking - Data Validation",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q5c (Networking - TCP): How can TCP provide guarantees on data reliability and flow control?",
+    "answer": "Reliability mechanisms: 1) Acknowledgments (ACKs) - Receiver confirms received segments, 2) Timeouts and retransmission - Sender retransmits if ACK not received, 3) Sequence numbers - Detect duplicates and reorder segments, 4) Checksums - Detect corruption. Flow control: 1) Sliding window protocol - Receiver advertises available buffer space (receive window), 2) Sender limits transmission to receiver's window size, preventing overflow, 3) Dynamic window adjustment based on receiver capacity. Congestion control (additional): Slow start, congestion avoidance, fast retransmit/recovery.",
+    "topic": "Networking - TCP Reliability",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q6a (Networking L2/L3): Machine IP 192.168.1.35 (MAC: AC:AD...) needs to communicate with destination IP 192.168.1.2. Explain the data transfer process.",
+    "answer": "Since both IPs are in the same subnet (192.168.1.x/24), communication is Layer 2 (direct). Process: 1) Source checks subnet mask, determines destination is local, 2) Use ARP to resolve 192.168.1.2 to MAC address, 3) Encapsulate packet with source IP 192.168.1.35, destination IP 192.168.1.2, 4) Add Ethernet frame with source MAC AC:AD..., destination MAC from ARP, 5) Send frame directly via switch. Switch forwards based on MAC address. No router involved.",
+    "topic": "Networking - L2/L3",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q6b (Networking L2/L3): Machine 192.168.1.35 communicates with 10.8.17.65/24 (different subnet, router at 10.8.17.89). Explain L2 and L3 data transfer.",
+    "answer": "Different subnets require routing (L3). Process: 1) Source determines destination 10.8.17.65 is remote (different subnet), 2) Packet sent to default gateway/router, 3) L3: IP packet has source 192.168.1.35, destination 10.8.17.65, 4) L2 (first hop): Ethernet frame has source MAC AC:AD..., destination MAC = router's external interface MAC, 5) Router receives, examines destination IP, forwards to internal interface 10.8.17.89, 6) L2 (second hop): New frame with source MAC = router's 10.8.17.89 interface, destination MAC = resolved via ARP for 10.8.17.65 (1A:2B:3C:4D:9C:5A), 7) Frame delivered to final destination. L2 changes at each hop, L3 addresses remain constant.",
+    "topic": "Networking - Routing",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q7 (MCQ - Networking): How can a host machine get an IP address in network 172.18.20.x/24? What protocol and how does it work? Options: a) DNS, b) HTTP, c) DHCP, d) ARP",
+    "answer": "Answer: c) DHCP (Dynamic Host Configuration Protocol). How it works: 1) DHCP Discovery - Client broadcasts 'DHCP Discover' message to find DHCP servers, 2) DHCP Offer - Server responds with available IP address offer, 3) DHCP Request - Client broadcasts request for offered IP, 4) DHCP Acknowledgment - Server confirms allocation, sends IP, subnet mask, default gateway, DNS servers, lease time. Client now configured with IP 172.18.20.x. DNS resolves names to IPs, HTTP is application protocol, ARP resolves IPs to MACs - none assign IP addresses.",
+    "topic": "Networking - DHCP",
+    "difficulty": "easy"
+  },
+  {
+    "question": "Q8 (MCQ - RAID): For data centre workloads with more random reads/writes (vs sequential), which RAID level do you recommend? Options: a) RAID 0, b) RAID 1, c) RAID 4, d) RAID 5",
+    "answer": "Answer: d) RAID 5. Reasoning: RAID 5 distributes parity across all disks, allowing parallel writes to different disks, ideal for random I/O. RAID 0 has no redundancy (unacceptable for data centre). RAID 1 provides redundancy but wastes 50% capacity and offers no write performance benefit. RAID 4 has parity bottleneck - all writes must update single parity disk, terrible for random writes. RAID 5 provides good balance: redundancy (can lose one disk), reasonable capacity efficiency, and good random read/write performance by distributing both data and parity.",
+    "topic": "Storage - RAID",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q9 (MCQ - Concurrency): Program with 10 threads, each processing 10,000 independent records from a file (100,000 total). What concurrency primitives are needed? Options: a) Locks only, b) Condition variables only, c) Both locks and condition variables, d) Neither",
+    "answer": "Answer: d) No need for either locks or condition variables. Reasoning: Each thread processes a DIFFERENT, NON-OVERLAPPING set of 10,000 records independently. There's no shared data between threads that requires synchronization. Thread 1 processes records 1-10000, Thread 2 processes 10001-20000, etc. No race conditions, no shared state modification, no need to wait for other threads. Locks needed only when threads access shared mutable data. Condition variables needed when threads must wait for specific conditions from other threads. Neither applies here.",
+    "topic": "Concurrency - Thread Synchronization",
+    "difficulty": "medium"
+  },
+  {
+    "question": "Q10 (MCQ - Scheduling): For a mix of I/O-intensive and CPU-intensive workloads with unknown completion times and arbitrary arrival, which scheduling policy is best? Options: a) Multi-level feedback queues, b) FCFS, c) Round Robin, d) Shortest completion time first",
+    "answer": "Answer: a) Multi-level feedback queues (MLFQ). Reasoning: MLFQ adapts to workload mix without prior knowledge: 1) Prioritizes short/I/O jobs (better response time), 2) Prevents starvation by aging, 3) Automatically adjusts priorities based on behavior, 4) Gives new jobs high priority (optimizes for interactive/I/O), 5) Demotes CPU-intensive jobs to lower queues. FCFS is terrible for response time. Round Robin treats all equally (poor for I/O jobs). SCTF requires knowing completion time (unavailable). MLFQ learns and adapts, ideal for real-world mixed workloads.",
+    "topic": "Scheduling",
+    "difficulty": "hard"
+  },
+  {
+    "question": "Q11 (MCQ - Web Scalability): HTTP/1.1 server crashes under load from many clients. What quick solution? Options: a) Cookies, b) Web caches, c) HTTP/1.0, d) Proxies",
+    "answer": "Answer: b) Web caches (or d) Proxies - both valid). Web caches: Deploy caching servers (e.g., CDN, reverse proxy like Varnish/Nginx) in front of origin server. Cache frequently accessed content, reducing load on origin server. Requests served from cache don't reach origin. Proxies (load balancers): Distribute requests across multiple server instances, preventing single server overload. Quick to deploy (e.g., Nginx/HAProxy as reverse proxy/load balancer). Cookies are for session management, HTTP/1.0 is older/worse. Best quick solution: Deploy reverse proxy with caching.",
+    "topic": "Web Scalability",
+    "difficulty": "medium"
+  }
+]

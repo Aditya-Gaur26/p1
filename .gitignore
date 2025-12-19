@@ -43,6 +43,7 @@ venv.bak/
 # Model Files (too large for git)
 models/base/
 models/fine_tuned/
+models/fine_tuned_v2/
 *.bin
 *.safetensors
 *.pt
