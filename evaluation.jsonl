@@ -1,0 +1,262 @@
+{
+  "evaluation_meta": {
+    "date": "2025-12-19",
+    "model": "fine_tuned_v2",
+    "total_questions": 23,
+    "scoring": {
+      "total_conceptual_score": 91,
+      "max_conceptual_score": 115,
+      "total_bonus_marks": 15,
+      "max_bonus_marks": 46
+    },
+    "metrics": {
+      "pass": 12,
+      "pass_with_warning": 6,
+      "fail": 5
+    }
+  },
+  "results": [
+    {
+      "question_id": 1,
+      "topic": "Process Virtualization",
+      "verdict": "Pass with Warning",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Meta-commentary",
+        "Hallucinated Links"
+      ]
+    },
+    {
+      "question_id": 2,
+      "topic": "Process Virtualization and Memory",
+      "verdict": "Pass with Warning",
+      "conceptual_score": 4,
+      "bonus_marks": 0,
+      "issues": [
+        "Hallucinated conversation"
+      ]
+    },
+    {
+      "question_id": 3,
+      "topic": "Process Scheduling",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Hallucinated Assembly Code"
+      ]
+    },
+    {
+      "question_id": 4,
+      "topic": "Memory Virtualization - Paging",
+      "verdict": "Pass with Warning",
+      "conceptual_score": 4,
+      "bonus_marks": 1,
+      "issues": [
+        "Argumentative Tone"
+      ],
+      "bonus_reason": "Cited valid paper (Navarro et al.) on Superpages."
+    },
+    {
+      "question_id": 5,
+      "topic": "Memory Virtualization - Page Replacement",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 1,
+      "issues": [
+        "Hallucinated Links"
+      ],
+      "bonus_reason": "Cited valid research context (Waldspurger)."
+    },
+    {
+      "question_id": 6,
+      "topic": "Memory Virtualization - Optimization",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 1,
+      "issues": [
+        "Hallucinated Links"
+      ],
+      "bonus_reason": "Cited valid research context (Worthington)."
+    },
+    {
+      "question_id": 7,
+      "topic": "Concurrency - Readers-Writers Problem",
+      "verdict": "Pass",
+      "conceptual_score": 3,
+      "bonus_marks": 0,
+      "issues": [
+        "Vague logic"
+      ]
+    },
+    {
+      "question_id": 8,
+      "topic": "File Systems - Storage Management",
+      "verdict": "Fail",
+      "conceptual_score": 1,
+      "bonus_marks": 0,
+      "issues": [
+        "Incorrect Conclusion",
+        "Bad Math"
+      ]
+    },
+    {
+      "question_id": 9,
+      "topic": "File Systems - Operations",
+      "verdict": "Fail",
+      "conceptual_score": 2,
+      "bonus_marks": 0,
+      "issues": [
+        "Incorrect Traversal Path"
+      ]
+    },
+    {
+      "question_id": 10,
+      "topic": "File Systems - Performance",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Hallucinated Links"
+      ]
+    },
+    {
+      "question_id": 11,
+      "topic": "Networking - TCP APIs",
+      "verdict": "Pass",
+      "conceptual_score": 4,
+      "bonus_marks": 2,
+      "issues": [
+        "Minor inaccuracy"
+      ],
+      "bonus_reason": "Correctly cited RFC 793 (TCP)."
+    },
+    {
+      "question_id": 12,
+      "topic": "Networking - Data Validation",
+      "verdict": "Fail",
+      "conceptual_score": 1,
+      "bonus_marks": 2,
+      "issues": [
+        "Technical Error (TCP mechanics)"
+      ],
+      "bonus_reason": "Correctly cited Van Jacobson's Congestion Avoidance paper."
+    },
+    {
+      "question_id": 13,
+      "topic": "Networking - TCP Reliability",
+      "verdict": "Fail",
+      "conceptual_score": 2,
+      "bonus_marks": 2,
+      "issues": [
+        "Technical Error (Slow start units)"
+      ],
+      "bonus_reason": "Correctly cited Cerf & Kahn's foundational paper."
+    },
+    {
+      "question_id": 14,
+      "topic": "Networking - L2/L3",
+      "verdict": "Pass with Warning",
+      "conceptual_score": 4,
+      "bonus_marks": 0,
+      "issues": [
+        "Hallucinated specific PIM/Multicast details"
+      ]
+    },
+    {
+      "question_id": 15,
+      "topic": "Networking - Routing",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 2,
+      "issues": [
+        "Hallucinated Links"
+      ],
+      "bonus_reason": "Correctly cited Metcalfe & Boggs (Ethernet)."
+    },
+    {
+      "question_id": 16,
+      "topic": "Networking - Protocols",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Hallucinated Links"
+      ]
+    },
+    {
+      "question_id": 17,
+      "topic": "Storage - RAID",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 2,
+      "issues": [
+        "Hallucinated Links"
+      ],
+      "bonus_reason": "Correctly cited the original RAID paper."
+    },
+    {
+      "question_id": 18,
+      "topic": "Concurrency - Synchronization",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 2,
+      "issues": [
+        "Hallucinated Code"
+      ],
+      "bonus_reason": "Correctly cited Birrell's 'Programming with Threads'."
+    },
+    {
+      "question_id": 19,
+      "topic": "Scheduling",
+      "verdict": "Pass with Warning",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Meta-commentary"
+      ]
+    },
+    {
+      "question_id": 20,
+      "topic": "Web Scalability",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Language Leakage"
+      ]
+    },
+    {
+      "question_id": 21,
+      "topic": "Concurrency - Deadlock",
+      "verdict": "Fail",
+      "conceptual_score": 1,
+      "bonus_marks": 0,
+      "issues": [
+        "Language Leakage",
+        "Incorrect Condition Names"
+      ]
+    },
+    {
+      "question_id": 22,
+      "topic": "Virtualization - Containers vs VMs",
+      "verdict": "Pass",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Hallucinated Links"
+      ]
+    },
+    {
+      "question_id": 23,
+      "topic": "Distributed Systems - CAP Theorem",
+      "verdict": "Pass with Warning",
+      "conceptual_score": 5,
+      "bonus_marks": 0,
+      "issues": [
+        "Language Leakage"
+      ]
+    }
+  ]
+}

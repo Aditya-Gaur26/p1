@@ -9,6 +9,15 @@ This project fine-tunes a Qwen3 language model on Operating Systems and Networks
 - Provide detailed explanations with examples
 - Use Retrieval-Augmented Generation (RAG) for context-aware responses
 
+## Fine tuned models :
+- [Fine-tuned Model (Google Drive)](https://drive.google.com/drive/folders/YOUR_FOLDER_ID_HERE)
+
+## Evaluations reports at :
+- [Test Results](./test_results2.json)
+- [Evaluation Report](./evaluation.jsonl)
+
+
+
 ## 🏗️ Architecture
 
 ```
